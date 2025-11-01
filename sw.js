@@ -2,7 +2,7 @@ const CACHE_NAME = 'tool-app-cache-v1';
 const urlsToCache = [
   '/compress.html',
   '/converter.html',
-  '/editor.html',
+  '/index.html',
   '/profile.html',
   '/qr.html',
   '/sw.js'
