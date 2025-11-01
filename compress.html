@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Сжать изображения</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    /* Общие стили */
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0f1724;
+      color: #e6eef8;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    /* Зона drag & drop (кликабельная) */
+    #dropZone {
+      border: 2px dashed #3b82f6;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 560px;
+      height: 160px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #9bb4ff;
+      font-size: 18px;
+      cursor: pointer;
+      transition: 0.18s;
+      text-align: center;
+      flex-direction: column;
+      user-select: none;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(0,0,0,0.02));
+    }
+    #dropZone:hover {
+      background: rgba(59,130,246,0.03);
+    }
+    #dropZone.dragover {
+      background: rgba(59,130,246,0.12);
+      border-color: #2563eb;
+      color: #fff;
+      transform: translateY(-4px);
+    }
+    #dropZone .plus {
+      font-size: 46px;
+      color: #3b82f6;
+      margin-bottom: 6px;
+      line-height: 1;
+    }
+    #dropZone small {
+      display:block;
+      margin-top:6px;
+      color: #a9c7ff;
+      font-size: 13px;
+    }
+
+    input[type=file] {
+      display: none;
+    }
+
+    /* Сетка карточек */
+    #imagesWrapper {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      width: 100%;
+      max-width: 1000px;
+      margin-top: 22px;
+      justify-content: center;
+    }
+
+    .imageCard {
+      background: #0b1220;
+      padding: 14px;
+      border-radius: 10px;
+      flex: 1 1 280px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.45);
+      transition: transform .16s ease, box-shadow .16s ease;
+    }
+    .imageCard:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+
+    .imageCard .filename {
+      width: 100%;
+      font-size: 14px;
+      color: #dbeaff;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .imageCard img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin-top: 10px;
+      cursor: pointer;
+      background: #0a0f16;
+      box-shadow: inset 0 -8px 24px rgba(0,0,0,0.2);
+    }
+
+    .info {
+      font-size: 13px;
+      color: #a0c4ff;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .variants {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 12px;
+      flex-wrap: nowrap;
+    }
+
+    .variants button {
+      width: 60px;
+      text-align: center;
+      font-size: 14px;
+      padding: 8px 6px;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: transform .12s ease, background .12s ease;
+    }
+    .variants button:hover { transform: translateY(-2px); background: #2563eb; }
+
+    .download-btn {
+      margin-top: 12px;
+      width: 100%;
+      padding: 9px 0;
+      font-size: 14px;
+      opacity: 0.5;
+      pointer-events: none;
+      border-radius: 6px;
+      border: none;
+      background: linear-gradient(90deg, #06b6d4, #3b82f6);
+      color: #fff;
+      cursor: pointer;
+    }
+    .download-btn.active {
+      opacity: 1;
+      pointer-events: auto;
+      box-shadow: 0 8px 24px rgba(59,130,246,0.14);
+    }
+
+    #downloadZipBtn {
+      margin-top: 22px;
+      padding: 10px 22px;
+      font-size: 16px;
+      border-radius: 8px;
+      background: #10b981;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      display: none; /* скрыта до выбора файлов */
+      box-shadow: 0 8px 24px rgba(16,185,129,0.14);
+    }
+    #downloadZipBtn:hover { background: #059669; transform: translateY(-2px); }
+
+    button { font-family: inherit; }
+    .app-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background:#0b1220;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 8px 0;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.5);
+  z-index: 1000;
+}
+
+.app-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+  color: #fff;
+  text-decoration: none;
+  transition: 0.3s;
+}
+
+.app-nav a.active {
+  color: #3b82f6;
+}
+
+.app-nav a i {
+  font-size: 20px;
+  margin-bottom: 2px;
+}
+
+@media(max-width:500px){
+  .app-nav a span {font-size:10px;}
+  .app-nav a i {font-size:18px;}
+}
+
+    @media (max-width: 720px) {
+      #dropZone { height: 140px; font-size: 15px; }
+      #dropZone .plus { font-size: 42px; }
+      .imageCard { flex: 1 1 100%; }
+      .variants button { width: 32%; min-width: 56px; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Сжать изображения</h1>
+
+  <!-- Доступная зона drag & drop (и клик) -->
+  <div id="dropZone" tabindex="0" role="button" aria-label="Добавить файлы">
+    <div class="plus">+</div>
+    Перетащите изображения сюда<br>
+    или нажмите, чтобы выбрать
+    <small>поддерживается до 10 файлов за раз</small>
+    <input type="file" id="fileInput" multiple accept="image/*">
+  </div>
+
+  <!-- Карточки изображений -->
+  <div id="imagesWrapper"></div>
+
+  <!-- Кнопка ZIP (появляется после добавления файлов) -->
+  <button id="downloadZipBtn">Скачать все как ZIP</button>
+
+  <div class="app-nav">
+    <a href="editor.html" id="nav-editor"><i class="fas fa-code"></i><span>Редактор</span></a>
+    <a href="compress.html" id="nav-compress"><i class="fas fa-compress-alt"></i><span>Сжать</span></a>
+    <a href="profile.html" id="nav-profile"><i class="fas fa-user"></i><span>Профиль</span></a>
+    <a href="converter.html" id="nav-converter"><i class="fas fa-file-export"></i><span>Конвертер</span></a>
+    <a href="qr.html" id="nav-qr"><i class="fas fa-qrcode"></i><span>QR</span></a>
+  </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <script>
+    /* ======= ТВОЙ ОРИГИНАЛЬНЫЙ ФУНКЦИОНАЛ (сохранён, не ломаем) ======= */
+
+    const filesWrapper = document.getElementById('imagesWrapper');
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const downloadZipBtn = document.getElementById('downloadZipBtn');
+
+    // Список исходных файлов и объект со сжатыми данными
+    let filesList = [];
+    let compressedBlobs = {};
+
+    // Форматирование размера
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+      else return (bytes / 1048576).toFixed(1) + ' MB';
+    }
+
+    // Обработка клика по зоне — открываем диалог
+    dropZone.addEventListener('click', function () {
+      fileInput.click();
+    });
+
+    // Drag & Drop UI
+    dropZone.addEventListener('dragover', function (e) {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', function (e) {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', function (e) {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const dtFiles = e.dataTransfer.files;
+      handleFiles(dtFiles);
+    });
+
+    // И при выборе через input
+    fileInput.addEventListener('change', function (e) {
+      const chosen = e.target.files;
+      handleFiles(chosen);
+    });
+
+    // Основная обработка файлов — НЕ изменена логика, только вывод карточек
+    function handleFiles(fileListLike) {
+      // Ограничение до 10 файлов, согласен с твоим ранним кодом
+      filesList = Array.from(fileListLike).slice(0, 10);
+      // Сбрасываем старые результаты сжатия
+      compressedBlobs = {};
+      // Очищаем DOM
+      filesWrapper.innerHTML = '';
+
+      // Показываем кнопку ZIP (только если есть файлы)
+      if (filesList.length > 0) {
+        downloadZipBtn.style.display = 'inline-block';
+      } else {
+        downloadZipBtn.style.display = 'none';
+      }
+
+      // Для каждого файла — создаём карточку
+      filesList.forEach((file, index) => {
+        // Создаём элементы
+        const card = document.createElement('div');
+        card.className = 'imageCard';
+
+        const name = document.createElement('div');
+        name.className = 'filename';
+        name.innerText = file.name;
+
+        const preview = document.createElement('img');
+        preview.alt = file.name;
+        preview.dataset.index = index; // для удобства
+
+        const info = document.createElement('div');
+        info.className = 'info';
+        info.innerText = 'Исходный размер: ' + formatBytes(file.size);
+
+        const variants = document.createElement('div');
+        variants.className = 'variants';
+
+        // Кнопки уровней сжатия
+        ['2×', '4×', '8×'].forEach((level) => {
+          const btn = document.createElement('button');
+          btn.innerText = level;
+          btn.addEventListener('click', function () {
+            applyCompression(file, index, level);
+          });
+          variants.appendChild(btn);
+        });
+
+        // Кнопка скачать (в ней мы скачаем все доступные сжатые варианты — как и в твоём оригинале)
+        const downloadBtn = document.createElement('button');
+        downloadBtn.className = 'download-btn';
+        downloadBtn.innerText = 'Скачать';
+        downloadBtn.addEventListener('click', function () {
+          downloadFile(index);
+        });
+
+        // Добавляем все элементы в карточку и в DOM
+        card.appendChild(name);
+        card.appendChild(preview);
+        card.appendChild(info);
+        card.appendChild(variants);
+        card.appendChild(downloadBtn);
+        filesWrapper.appendChild(card);
+
+        // Читаем исходный файл в preview (dataURL)
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          preview.src = e.target.result;
+          // Сохраним исходный dataURL для возможности переключения при клике
+          preview.dataset.original = e.target.result;
+        };
+        reader.readAsDataURL(file);
+
+        // Клик по превью: переключение между исходным и последним сжатым вариантом (если есть)
+        preview.addEventListener('click', function () {
+          togglePreviewImage(index, preview);
+        });
+      });
+    }
+    function incrementImages(count = 1) {
+  const current = parseInt(localStorage.getItem('stats_images') || 0);
+  localStorage.setItem('stats_images', current + count);
+}
+    // Функция сжатия (логика как в твоём коде)
+    function applyCompression(file, index, level) {
+      const qualityMap = { '2×': 0.8, '4×': 0.6, '8×': 0.4 };
+      const quality = qualityMap[level];
+      const maxWidth = 1200;
+   
+      const img = new Image();
+      const reader = new FileReader();
+
+      reader.onload = function (e) {
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+
+      img.onload = function () {
+        let w = img.width;
+        let h = img.height;
+        if (w > maxWidth) {
+          h = h * (maxWidth / w);
+          w = maxWidth;
+        }
+        incrementImages();
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+
+        // Выбираем mime тот же, что у файла (png -> png, иначе jpeg)
+        const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+
+        // Получаем blob с нужным качеством
+        canvas.toBlob(function (blob) {
+          // Сохраняем blob в объекте compressedBlobs под ключом index_level
+          compressedBlobs[`${index}_${level}`] = blob;
+
+          // Найдём карточку и обновим preview + инфо + включим кнопку скачивания
+          const card = filesWrapper.getElementsByClassName('imageCard')[index];
+          if (!card) return;
+          const preview = card.getElementsByTagName('img')[0];
+          const info = card.getElementsByClassName('info')[0];
+          const downloadBtn = card.getElementsByClassName('download-btn')[0];
+
+          // Обновляем preview на сжатый (через createObjectURL)
+          const objectUrl = URL.createObjectURL(blob);
+          preview.src = objectUrl;
+
+          // Сохраним ссылку на последний сжатый вариант, чтобы при клике переключать
+          // dataset содержит несколько полей: original (dataURL), lastCompressed (objectURL)
+          preview.dataset.lastCompressed = objectUrl;
+          preview.dataset.lastCompressedLevel = level;
+
+          // Обновляем текст инфо (как было у тебя)
+          info.innerText = `Исходный: ${formatBytes(file.size)} | ${level} → ${formatBytes(blob.size)}`;
+
+          // Активируем кнопку скачивания карточки (как раньше)
+          downloadBtn.classList.add('active');
+
+        }, mime, quality);
+      };
+
+      // На ошибках чтения/загрузки ничего особенного не делаем — оставляем поведение простым
+      img.onerror = function () {
+        alert('Не удалось загрузить изображение для сжатия: ' + file.name);
+      };
+    }
+
+    // Функция скачивания всех сжатых версий для одного файла (как в твоём коде)
+    function downloadFile(index) {
+      // Скачиваем три варианта, если они существуют (2×,4×,8×)
+      ['2×', '4×', '8×'].forEach(function (level) {
+        const key = `${index}_${level}`;
+        const blob = compressedBlobs[key];
+        if (blob) {
+          const file = filesList[index];
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          // Составляем имя: originalname_2×.jpg или .png
+          const ext = (file.type === 'image/png') ? '.png' : '.jpg';
+          link.download = file.name.replace(/\.\w+$/, `_${level}${ext}`);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          // Освободим объект URL чуть позже (не сразу, чтобы скачивание успело начаться)
+          setTimeout(() => URL.revokeObjectURL(link.href), 3000);
+        }
+      });
+    }
+
+    // ZIP — собирает все сжатые файлы, имя каждого файла сохраняет как в твоём коде
+    downloadZipBtn.addEventListener('click', async function () {
+      // Если нет ни одного сжатого — предупреждаем (как раньше)
+      if (Object.keys(compressedBlobs).length === 0) {
+        alert('Сначала примените сжатие');
+        return;
+      }
+
+      const zip = new JSZip();
+
+      // Перебираем все ключи compressedBlobs — добавляем в архив
+      for (let key in compressedBlobs) {
+        if (!compressedBlobs.hasOwnProperty(key)) continue;
+        const parts = key.split('_'); // [index, level]
+        const index = parts[0];
+        const level = parts[1];
+        const file = filesList[index];
+        const blob = compressedBlobs[key];
+
+        // Выбираем расширение по типу
+        const ext = (file.type === 'image/png') ? '.png' : '.jpg';
+        const filename = file.name.replace(/\.\w+$/, `_${level}${ext}`);
+
+        // JSZip принимает Blob - ok
+        zip.file(filename, blob);
+      }
+
+      // Генерируем архив и даём скачать
+      try {
+        const content = await zip.generateAsync({ type: 'blob' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(content);
+        a.download = 'compressed_images.zip';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+      } catch (err) {
+        alert('Ошибка при формировании ZIP: ' + err.message);
+      }
+    });
+
+    // - иначе — показываем исходный
+    function togglePreviewImage(index, imgElement) {
+      // Если нет lastCompressed — ничего не переключаем (ничего не делаем)
+      const lastCompressed = imgElement.dataset.lastCompressed;
+      const original = imgElement.dataset.original;
+      if (!lastCompressed) {
+        // Нет сжатых версий — ничего не делаем
+        return;
+      }
+
+      // Узнаём текущий src и переключаем
+      // Сравним — если src === original или src === dataURL starting with data:
+      const currentSrc = imgElement.src || '';
+      // Бывает, что browser обновил objectURL и src !== dataset.lastCompressed (если blob обновился).
+      // Поэтому сравниваем по dataset: используем флаг dataset.showingCompressed
+      if (!imgElement.dataset.showingCompressed || imgElement.dataset.showingCompressed === 'false') {
+        // Показать сжатый
+        imgElement.src = imgElement.dataset.lastCompressed;
+        imgElement.dataset.showingCompressed = 'true';
+      } else {
+        // Показать оригинал (dataURL)
+        if (original) {
+          imgElement.src = original;
+          imgElement.dataset.showingCompressed = 'false';
+        }
+      }
+    }
+    const current = window.location.pathname.split('/').pop().split('.')[0];
+
+const navMap = {
+  'editor':'nav-editor',
+  'compress':'nav-compress',
+  'profile':'nav-profile',
+  'converter':'nav-converter',
+  'qr':'nav-qr'
+};
+
+if(navMap[current]){
+  document.getElementById(navMap[current]).classList.add('active');
+}
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW зарегистрирован', reg))
+      .catch(err => console.error('SW ошибка', err));
+  });
+}
+  </script>
+</body>
+</html>

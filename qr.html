@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Генератор QR</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+  :root {
+    --bg:#0f1724;
+    --card:#0b1220;
+    --text:#e6eef8;
+    --btn:#3b82f6;
+    --btn-hover:#2563eb;
+  }
+
+  body {
+    margin:0;
+    font-family: Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:20px;
+    min-height:100vh;
+  }
+
+  h1 {
+    text-align:center;
+    margin-bottom:24px;
+    font-size:28px;
+  }
+
+  .container {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    width:100%;
+    max-width:450px;
+    padding:24px;
+  }
+
+  input[type=text] {
+    width:100%;
+    padding:12px 14px;
+    border-radius:8px;
+    border:none;
+    margin-bottom:12px;
+    font-size:16px;
+    background:#1a1f24;
+    color:#e6eef8;
+    outline:none;
+    transition:0.2s;
+  }
+
+  input[type=text]:focus {
+    box-shadow:0 0 8px rgba(59,130,246,0.4);
+  }
+
+  button {
+    width:106%;
+    padding:12px 0;
+    background: var(--btn);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:16px;
+    margin-top:8px;
+    transition:0.3s;
+  }
+
+  button:hover {
+    background: var(--btn-hover);
+    transform:translateY(-1px);
+  }
+
+  #qrCanvas {
+    margin-top:20px;
+    background:#fff;
+    border-radius:8px;
+    padding:10px;
+    box-shadow:0 4px 16px rgba(0,0,0,0.4);
+  }
+  #downloadBtn {
+    margin-top: 20px;
+  }
+
+  @media(max-width:500px){
+    .container {
+      padding:16px;
+    }
+    input[type=text], button {
+      font-size:14px;
+      padding:10px;
+    }
+    #qrCanvas {
+      width:100% !important;
+      height:auto !important;
+    }
+  }
+
+.app-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background:#0b1220;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 8px 0;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.5);
+  z-index: 1000;
+}
+
+.app-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+  color: #fff;
+  text-decoration: none;
+  transition: 0.3s;
+}
+
+.app-nav a.active {
+  color: #3b82f6;
+}
+
+.app-nav a i {
+  font-size: 20px;
+  margin-bottom: 2px;
+}
+
+@media(max-width:500px){
+  .app-nav a span {font-size:10px;}
+  .app-nav a i {font-size:18px;}
+}
+</style>
+</head>
+<body>
+
+<h1>Генератор QR-кода</h1>
+
+<div class="container">
+  <input type="text" id="textInput" placeholder="Введите текст или ссылку">
+  <button id="generateBtn">Сгенерировать QR</button>
+  <canvas id="qrCanvas"></canvas>
+  <button id="downloadBtn">Скачать QR</button>
+</div>
+<div class="app-nav">
+  <a href="editor.html" id="nav-editor"><i class="fas fa-code"></i><span>Редактор</span></a>
+  <a href="compress.html" id="nav-compress"><i class="fas fa-compress-alt"></i><span>Сжать</span></a>
+  <a href="profile.html" id="nav-profile"><i class="fas fa-user"></i><span>Профиль</span></a>
+  <a href="converter.html" id="nav-converter"><i class="fas fa-file-export"></i><span>Конвертер</span></a>
+  <a href="qr.html" id="nav-qr"><i class="fas fa-qrcode"></i><span>QR</span></a>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
+<script>
+const textInput = document.getElementById('textInput');
+const generateBtn = document.getElementById('generateBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const canvas = document.getElementById('qrCanvas');
+
+generateBtn.addEventListener('click', () => {
+  const text = textInput.value.trim();
+  if(!text) return alert('Введите текст или ссылку!');
+  QRCode.toCanvas(canvas, text, {width:300, margin:2, color:{dark:"#000000", light:"#ffffff"}}, function (error) {
+    if(error) console.error(error);
+  });
+  incrementQR();
+});
+function incrementQR() {
+  const current = parseInt(localStorage.getItem('stats_qr') || 0);
+  localStorage.setItem('stats_qr', current + 1);
+}
+downloadBtn.addEventListener('click', () => {
+  if(!canvas.toDataURL()) return alert('Сначала сгенерируйте QR!');
+  const link = document.createElement('a');
+  link.href = canvas.toDataURL('image/png');
+  link.download = 'qr_code.png';
+  link.click();
+});
+const current = window.location.pathname.split('/').pop().split('.')[0];
+
+const navMap = {
+  'editor':'nav-editor',
+  'compress':'nav-compress',
+  'profile':'nav-profile',
+  'converter':'nav-converter',
+  'qr':'nav-qr'
+};
+
+if(navMap[current]){
+  document.getElementById(navMap[current]).classList.add('active');
+}
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW зарегистрирован', reg))
+      .catch(err => console.error('SW ошибка', err));
+  });
+}
+</script>
+
+</body>
+</html>

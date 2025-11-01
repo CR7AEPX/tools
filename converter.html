@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Файловый конвертер</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+  --bg:#0f1724;
+  --card:#0b1220;
+  --text:#e6eef8;
+  --btn:#3b82f6;
+  --btn-hover:#2563eb;
+  --success:#10b981;
+}
+
+body {
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:20px;
+  min-height:100vh;
+}
+
+h1 {
+  margin-bottom:20px;
+  text-align:center;
+  font-size:28px;
+}
+
+.container {
+  padding:24px;
+  border-radius:12px;
+  width:100%;
+  max-width:500px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+}
+
+.dropzone {
+  width:100%;
+  height:150px;
+  border:2px dashed #3b82f6;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-bottom:2px;
+  cursor:pointer;
+  position:relative;
+  transition:0.3s;
+  text-align:center;
+}
+
+.dropzone.dragover {
+  background:rgba(59,130,246,0.1);
+}
+
+.dropzone span {
+  font-size:32px;
+  color:#3b82f6;
+}
+
+.filesList {
+  width:100%;
+  margin-bottom:16px;
+}
+
+.fileItem {
+  background:#1a1f24;
+  padding:8px 12px;
+  margin-bottom:6px;
+  border-radius:6px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+select, button {
+  width:100%;
+  padding:10px;
+  border-radius:8px;
+  border:none;
+  margin-top:8px;
+  font-size:16px;
+  cursor:pointer;
+  background:var(--btn);
+  color:#fff;
+  transition:0.3s;
+}
+
+select {
+  background:#1a1f24;
+  color:#e6eef8;
+}
+
+button:hover {
+  background:var(--btn-hover);
+  transform:translateY(-1px);
+}
+
+@media(max-width:500px){
+  .container {padding:16px;}
+  select, button {font-size:14px;padding:8px;}
+  .dropzone {height:120px;}
+}
+
+.app-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background:#0b1220;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 8px 0;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.5);
+  z-index: 1000;
+}
+
+.app-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+  color: #fff;
+  text-decoration: none;
+  transition: 0.3s;
+}
+
+.app-nav a.active {
+  color: #3b82f6;
+}
+
+.app-nav a i {
+  font-size: 20px;
+  margin-bottom: 2px;
+}
+
+@media(max-width:500px){
+  .app-nav a span {font-size:10px;}
+  .app-nav a i {font-size:18px;}
+}
+
+</style>
+</head>
+<body>
+
+<h1>Файловый конвертер</h1>
+
+<div class="container">
+  <div class="dropzone" id="dropzone"><span>+</span></div>
+  <div class="filesList" id="filesList"></div>
+
+  <select id="formatSelect">
+    <option value="">Выберите формат</option>
+    <option value="txt">TXT</option>
+    <option value="html">HTML</option>
+    <option value="json">JSON</option>
+    <option value="csv">CSV</option>
+    <option value="xml">XML</option>
+    <option value="png">PNG</option>
+    <option value="jpg">JPG</option>
+    <option value="webp">WebP</option>
+  </select>
+
+  <button id="convertBtn">Конвертировать и скачать</button>
+</div>
+
+<input type="file" id="fileInput" multiple style="display:none;">
+<div class="app-nav">
+  <a href="editor.html" id="nav-editor"><i class="fas fa-code"></i><span>Редактор</span></a>
+  <a href="compress.html" id="nav-compress"><i class="fas fa-compress-alt"></i><span>Сжать</span></a>
+  <a href="profile.html" id="nav-profile"><i class="fas fa-user"></i><span>Профиль</span></a>
+  <a href="converter.html" id="nav-converter"><i class="fas fa-file-export"></i><span>Конвертер</span></a>
+  <a href="qr.html" id="nav-qr"><i class="fas fa-qrcode"></i><span>QR</span></a>
+</div>
+
+<script>
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const filesListEl = document.getElementById('filesList');
+const formatSelect = document.getElementById('formatSelect');
+const convertBtn = document.getElementById('convertBtn');
+
+let files = [];
+
+dropzone.addEventListener('click', ()=>fileInput.click());
+
+dropzone.addEventListener('dragover', e=>{
+  e.preventDefault();
+  dropzone.classList.add('dragover');
+});
+dropzone.addEventListener('dragleave', e=>{
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+});
+dropzone.addEventListener('drop', e=>{
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+
+fileInput.addEventListener('change', e=>handleFiles(e.target.files));
+
+function handleFiles(selectedFiles){
+  for(let file of selectedFiles){
+    files.push(file);
+    const div = document.createElement('div');
+    div.className='fileItem';
+    div.innerText=file.name;
+    filesListEl.appendChild(div);
+  }
+}
+
+// Конвертер
+convertBtn.addEventListener('click', ()=>{
+  if(!formatSelect.value) return alert('Выберите формат');
+  if(files.length===0) return alert('Добавьте файлы');
+
+  files.forEach(file=>{
+    const reader = new FileReader();
+    const ext = formatSelect.value;
+    if(file.type.startsWith('image/')){
+      reader.onload = e=>{
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = ()=>{
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          canvas.getContext('2d').drawImage(img,0,0);
+          const mime = ext==='jpg'?'image/jpeg':ext==='webp'?'image/webp':'image/png';
+          canvas.toBlob(blob=>{
+            downloadBlob(blob,file.name.replace(/\.\w+$/,'')+'.'+ext);
+          },mime);
+        };
+      };
+      reader.readAsDataURL(file);
+    } else {
+      reader.onload = e=>{
+        let content = e.target.result;
+        if(ext==='txt' || ext==='html' || ext==='json' || ext==='csv' || ext==='xml'){
+          downloadBlob(new Blob([content],{type:'text/plain'}),file.name.replace(/\.\w+$/,'')+'.'+ext);
+        }
+      };
+      reader.readAsText(file);
+    }
+  });
+});
+function incrementConverted(count = 1){
+  const current = parseInt(localStorage.getItem('stats_converted') || 0);
+  localStorage.setItem('stats_converted', current + count);
+}
+function downloadBlob(blob,name){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=name;
+  a.click();
+  incrementConverted();
+}
+const current = window.location.pathname.split('/').pop().split('.')[0];
+
+const navMap = {
+  'editor':'nav-editor',
+  'compress':'nav-compress',
+  'profile':'nav-profile',
+  'converter':'nav-converter',
+  'qr':'nav-qr'
+};
+
+if(navMap[current]){
+  document.getElementById(navMap[current]).classList.add('active');
+}
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW зарегистрирован', reg))
+      .catch(err => console.error('SW ошибка', err));
+  });
+}
+</script>
+
+</body>
+</html>

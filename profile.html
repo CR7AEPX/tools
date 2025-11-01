@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Профиль</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+:root {
+  --bg: #0f1724;
+  --card: #0b1220;
+  --text: #e6eef8;
+  --accent: #3b82f6;
+}
+
+body {
+  margin:0;
+  font-family: Inter, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+h1 { text-align:center; margin:20px 0; }
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--card);
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.profile-header img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  cursor: pointer;
+  border: 2px solid var(--accent);
+}
+
+.profile-header .user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.profile-header .user-info h2 {
+  margin:0;
+  font-size: 22px;
+}
+
+.profile-header .user-info span {
+  font-size: 14px;
+  color: #a0c4ff;
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.stat-card {
+  flex: 1 1 150px;
+  background: var(--card);
+  padding: 15px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.stat-card h3 { margin:0 0 5px 0; font-size: 20px; }
+.stat-card p { margin:0; font-size: 14px; color:#a0c4ff; }
+
+.app-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background:#0b1220;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 8px 0;
+  box-shadow: 0 -4px 12px rgba(0,0,0,0.5);
+  z-index: 1000;
+}
+
+.app-nav a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 12px;
+  color: #fff;
+  text-decoration: none;
+  transition: 0.3s;
+}
+
+.app-nav a.active {
+  color: #3b82f6;
+}
+
+.app-nav a i {
+  font-size: 20px;
+  margin-bottom: 2px;
+}
+
+@media(max-width:500px){
+  .app-nav a span {font-size:10px;}
+  .app-nav a i {font-size:18px;}
+}
+
+@media(max-width:720px){
+  .stat-card {flex:1 1 45%;}
+}
+</style>
+</head>
+<body>
+
+<h1>Профиль</h1>
+
+<div class="container">
+
+  <div class="profile-header">
+    <img src="https://via.placeholder.com/80" alt="Аватар" id="avatar">
+    <div class="user-info">
+      <h2 id="username">Имя Пользователя</h2>
+      <span id="usernick">@nickname</span>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <h3 id="filesCount">0</h3>
+      <p>Создано файлов</p>
+    </div>
+    <div class="stat-card">
+      <h3 id="imagesCount">0</h3>
+      <p>Сжатых изображений</p>
+    </div>
+    <div class="stat-card">
+      <h3 id="qrCount">0</h3>
+      <p>Сгенерировано QR</p>
+    </div>
+    <div class="stat-card">
+      <h3 id="convertedCount">0</h3>
+      <p>Конвертировано файлов</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Навигация -->
+<div class="app-nav">
+  <a href="editor.html" id="nav-editor"><i class="fas fa-code"></i><span>Редактор</span></a>
+  <a href="compress.html" id="nav-compress"><i class="fas fa-compress-alt"></i><span>Сжать</span></a>
+  <a href="profile.html" id="nav-profile"><i class="fas fa-user"></i><span>Профиль</span></a>
+  <a href="converter.html" id="nav-converter"><i class="fas fa-file-export"></i><span>Конвертер</span></a>
+  <a href="qr.html" id="nav-qr"><i class="fas fa-qrcode"></i><span>QR</span></a>
+</div>
+
+<script>
+  // --------------------- АВАТАР И НИК ---------------------
+  const avatar = document.getElementById('avatar');
+  const username = document.getElementById('username');
+  const usernick = document.getElementById('usernick');
+
+  if(localStorage.getItem('avatar')) avatar.src = localStorage.getItem('avatar');
+  if(localStorage.getItem('username')) username.textContent = localStorage.getItem('username');
+  if(localStorage.getItem('usernick')) usernick.textContent = localStorage.getItem('usernick');
+
+  avatar.addEventListener('click', () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = ev => {
+        avatar.src = ev.target.result;
+        localStorage.setItem('avatar', ev.target.result);
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  });
+
+  username.addEventListener('click', () => {
+    const newName = prompt('Введите имя:', username.textContent);
+    if(newName) {
+      username.textContent = newName;
+      localStorage.setItem('username', newName);
+    }
+  });
+
+  usernick.addEventListener('click', () => {
+    const newNick = prompt('Введите ник:', usernick.textContent);
+    if(newNick) {
+      usernick.textContent = newNick;
+      localStorage.setItem('usernick', newNick);
+    }
+  });
+
+  // --------------------- СТАТИСТИКА ---------------------
+  const stats = {
+    files: parseInt(localStorage.getItem('stats_files')) || 0,
+    images: parseInt(localStorage.getItem('stats_images')) || 0,
+    qr: parseInt(localStorage.getItem('stats_qr')) || 0,
+    converted: parseInt(localStorage.getItem('stats_converted')) || 0
+  };
+
+  const filesCount = document.getElementById('filesCount');
+  const imagesCount = document.getElementById('imagesCount');
+  const qrCount = document.getElementById('qrCount');
+  const convertedCount = document.getElementById('convertedCount');
+
+  function updateStats() {
+    filesCount.textContent = stats.files;
+    imagesCount.textContent = stats.images;
+    qrCount.textContent = stats.qr;
+    convertedCount.textContent = stats.converted;
+  }
+
+  updateStats();
+
+  const current = window.location.pathname.split('/').pop().split('.')[0];
+  const navMap = {
+    'editor':'nav-editor',
+    'compress':'nav-compress',
+    'profile':'nav-profile',
+    'converter':'nav-converter',
+    'qr':'nav-qr'
+  };
+  if(navMap[current]){
+    document.getElementById(navMap[current]).classList.add('active');
+  }
+  if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW зарегистрирован', reg))
+      .catch(err => console.error('SW ошибка', err));
+  });
+}
+</script>
+
+</body>
+</html>
